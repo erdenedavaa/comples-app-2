@@ -2,7 +2,9 @@ const express = require("express");
 const session = require("express-session");
 const MongoStore = require("connect-mongo")(session);
 const flash = require("connect-flash");
+const markdown = require("marked")
 const app = express();
+const sanitizeHTML = require('sanitize-html')
 
 let sessionOptions = session({
   secret: "Javasript is soooooooo cooooool",
@@ -17,7 +19,14 @@ let sessionOptions = session({
 app.use(sessionOptions);
 app.use(flash());
 
+// every request-d ashiglah hesgiig oruulna
 app.use(function (req, res, next) {
+  // make our markdown function available from within ejs template
+  res.locals.filterUserHTML = function (content) {
+    // filterUserHTML bol zugeer l zohioson ner shuu
+    return sanitizeHTML(markdown(content), { allowedTags: ['p', 'br', 'ul', 'ol', 'li', 'strong', 'bold', 'i', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'], allowedAttributs: {}});
+  }
+  
   // make all error and success flash messages available from all templates
   res.locals.errors = req.flash("errors")
   res.locals.success = req.flash("success")
@@ -37,6 +46,7 @@ app.use(function (req, res, next) {
 });
 
 const router = require("./router");
+const { runInNewContext } = require("vm");
 
 app.use(express.urlencoded({ extended: false }));
 // user submitted data to request object gesen tohirgoo

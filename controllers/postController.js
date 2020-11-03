@@ -11,11 +11,17 @@ exports.create = function (req, res) {
   // Post model iin constructor-t shineer parametr nemeh shaardlagatai bolloo
   post
     .create()
-    .then(function () {
-      res.send("New post created.");
+    .then(function (newId) {
+      // newId ni mongoDB-iin insertOne promise-iin resolve-oor ijr bga ID
+      req.flash("success", "New post successfully created.");
+      req.session.save(() => res.redirect(`/post/${newId}`));
+      // "/post/id" post ni not yat created tul ID bhgui bga
+      // herhen redirect hiihdee ID-g ni medeh ve????
+      // hariult ni Post.js iin create() iin "insertOne" promise-d bga, haraarai
     })
     .catch(function (errors) {
-      res.send(errors);
+      errors.foreach((error) => req.flash("errors", error));
+      req.session.save(() => res.redirect("/create-post"));
     });
   // then ni sucessful RESOLVES
   // catch ni unsucessful REJECTS
@@ -34,8 +40,13 @@ exports.viewSingle = async function (req, res) {
 
 exports.viewEditScreen = async function (req, res) {
   try {
-    let post = await Post.findSingleById(req.params.id); // end visitorId bhgui bn yah ium bol?????
-    res.render("edit-post", { post: post });
+    let post = await Post.findSingleById(req.params.id, req.visitorId); // end visitorId bhgui bn yah ium bol?????
+    if (post.isVisitorOwner) {
+      res.render("edit-post", { post: post });
+    } else {
+      req.flash("errors", "You don't have permission to perform that action.");
+      req.session.save(() => res.redirect("/"));
+    }
   } catch {
     res.render("404");
   }
@@ -73,5 +84,19 @@ exports.edit = function (req, res) {
       req.session.save(function () {
         res.redirect("/");
       });
+    });
+};
+
+exports.delete = function (req, res) {
+  Post.delete(req.params.id, req.visitorId)
+    .then(() => {
+      req.flash("success", "Post successfully deleted");
+      req.session.save(() =>
+        res.redirect(`/profile/${req.session.user.username}`)
+      );
+    })
+    .catch(() => {
+      req.flash("errors", "You do not have permission to perform that action.");
+      req.session.save(() => res.redirect("/"));
     });
 };

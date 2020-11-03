@@ -2,6 +2,7 @@ const postsCollection = require("../db").db().collection("posts");
 const ObjectId = require("mongodb").ObjectId;
 // MongoDb ni "id"-d special aar handdag. iimees ingej duudaj bn
 const User = require("./User");
+const sanitizeHTML = require("sanitize-html");
 
 let Post = function (data, userid, requestedPostId) {
   this.data = data;
@@ -21,10 +22,15 @@ Post.prototype.cleanUp = function () {
   }
 
   // get rid of any bogus properties
-
   this.data = {
-    title: this.data.title.trim(),
-    body: this.data.body.trim(),
+    title: sanitizeHTML(this.data.title.trim(), {
+      allowedTags: [],
+      allowedAttributes: [],
+    }),
+    body: sanitizeHTML(this.data.body.trim(), {
+      allowedTags: [],
+      allowedAttributes: [],
+    }),
     createdDate: new Date(), // this program executed current time
     // author: this.userid
     // mongoDb ni "id"-d special-eer handdag tul iim engiin bailgaj boldoggui. doorhoor shiidne
@@ -51,8 +57,9 @@ Post.prototype.create = function () {
       // save post into database
       postsCollection
         .insertOne(this.data) // We don't know how long it takes to store on DB, so await or then, catch need!
-        .then(() => {
-          resolve();
+        .then((info) => {
+          resolve(info.ops[0]._id);
+          // Ene mash chuhal. MongoDB-ees newly created post iin ID butsaaj bn
         })
         .catch(() => {
           this.errors.push("Please try again later.");
@@ -63,6 +70,7 @@ Post.prototype.create = function () {
       // then, catch залгах гэж байгаа тул resolve хэрэггүй болдог юм байна
     } else {
       reject(this.errors);
+      // reject ni create() iig duudaj bui Promise iin catch ruu error-iig ilgeej bn
     }
   });
 };
@@ -178,6 +186,24 @@ Post.findByAuthorId = function (authorId) {
     { $match: { author: authorId } },
     { $sort: { createdDate: -1 } }, // descending order, 1 for accending order
   ]);
+};
+
+Post.delete = function (postIdToDelete, currentUserId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let post = await Post.findSingleById(postIdToDelete, currentUserId);
+      if (post.isVisitorOwner) {
+        await postsCollection.deleteOne({ _id: new ObjectId(postIdToDelete) });
+        resolve();
+      } else {
+        reject();
+        // something is not gooe, or trying to delete post that not own yed garah yed
+      }
+    } catch {
+      reject();
+      // Post Id is notvalid or post doesn't exist yed garah
+    }
+  });
 };
 
 module.exports = Post;
