@@ -113,6 +113,9 @@ Post.prototype.actuallyUpdate = function () {
   });
 };
 
+// Ene hesegt baahan ergelzeetei zuils bn
+// 1. post deer nemelteer "_id" orj irdeg. yaj orj ireed bgan bol???????
+// 2. post author clear hiihed nuguuduul ni yaj auto oilgoltsood bgan bol???????
 Post.reusablePostQuery = function (uniqueOperations, visitorId) {
   return new Promise(async function (resolve, reject) {
     let aggOperations = uniqueOperations.concat([
@@ -142,6 +145,9 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
     posts = posts.map(function (post) {
       post.isVisitorOwner = post.authorId.equals(visitorId);
       // return boolean
+      // search iin ur dund authorId reveal hiigeed bn. yyniig nuuhiin tuld daraah arga
+      post.authorId = undefined;
+      // delete post.authorId // gej boloh ch ene ni DB-d achaalal ugdug 
 
       post.author = {
         username: post.author.username,
@@ -202,6 +208,26 @@ Post.delete = function (postIdToDelete, currentUserId) {
     } catch {
       reject();
       // Post Id is notvalid or post doesn't exist yed garah
+    }
+  });
+};
+
+Post.search = function (searchTerm) {
+  return new Promise(async (resolve, reject) => {
+    // 1. Incoming searchTerm iig check hiine (not object, not empty object etc.)
+    if (typeof searchTerm == "string") {
+      let posts = await Post.reusablePostQuery([
+        { $match: { $text: { $search: searchTerm } } },
+        // ?????????? $search, $text haanaas garaad irev
+        // MongoDb -iin funciton ium shig bn
+        { $sort: { score: { $meta: "textScore" } } },
+        // score mean "best match on the top"
+        // ???????????? "textScore" haanaas garaad irev
+        // mongoDB using INDEXES gej bn
+      ]);
+      resolve(posts);
+    } else {
+      reject();
     }
   });
 };

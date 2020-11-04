@@ -100,3 +100,15 @@ exports.delete = function (req, res) {
       req.session.save(() => res.redirect("/"));
     });
 };
+
+exports.search = function (req, res) {
+  Post.search(req.body.searchTerm).then(posts => {
+    // search promise resolve values, that value is end "posts" parametreer
+    // butsaagadaj irne
+    res.json(posts)
+  }).catch(() => {
+    // search promise hervee errortoi bsan bol iishee reject ee butsaana
+    res.json([])
+    // hervee yamar negen aldaa bval empty array butsaana
+  })
+}
