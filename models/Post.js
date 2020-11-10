@@ -1,10 +1,11 @@
-const postsCollection = require("../db").db().collection("posts");
-const ObjectId = require("mongodb").ObjectId;
+const postsCollection = require('../db').db().collection('posts');
+const followsCollection = require('../db').db().collection('follows');
+const { ObjectId } = require('mongodb');
 // MongoDb ni "id"-d special aar handdag. iimees ingej duudaj bn
-const User = require("./User");
-const sanitizeHTML = require("sanitize-html");
+const User = require('./User');
+const sanitizeHTML = require('sanitize-html');
 
-let Post = function (data, userid, requestedPostId) {
+const Post = function (data, userid, requestedPostId) {
   this.data = data;
   this.errors = [];
   this.userid = userid;
@@ -13,12 +14,12 @@ let Post = function (data, userid, requestedPostId) {
 // This is constructor function
 
 Post.prototype.cleanUp = function () {
-  if (typeof this.data.title != "string") {
-    this.data.title = "";
+  if (typeof this.data.title !== 'string') {
+    this.data.title = '';
   }
 
-  if (typeof this.data.body != "string") {
-    this.data.body = "";
+  if (typeof this.data.body !== 'string') {
+    this.data.body = '';
   }
 
   // get rid of any bogus properties
@@ -39,12 +40,12 @@ Post.prototype.cleanUp = function () {
 };
 
 Post.prototype.validate = function () {
-  if (this.data.title == "") {
-    this.errors.push("You must provide a title.");
+  if (this.data.title == '') {
+    this.errors.push('You must provide a title.');
   }
 
-  if (this.data.body == "") {
-    this.errors.push("You must provide post content.");
+  if (this.data.body == '') {
+    this.errors.push('You must provide post content.');
   }
 };
 
@@ -62,7 +63,7 @@ Post.prototype.create = function () {
           // Ene mash chuhal. MongoDB-ees newly created post iin ID butsaaj bn
         })
         .catch(() => {
-          this.errors.push("Please try again later.");
+          this.errors.push('Please try again later.');
           reject(this.errors);
         });
       //   resolve(); Үүнийг арилгаж байгаа шалтгаан нь дээр байгаа
@@ -78,13 +79,13 @@ Post.prototype.create = function () {
 Post.prototype.update = function () {
   return new Promise(async (resolve, reject) => {
     try {
-      let post = await Post.findSingleById(this.requestedPostId, this.userid);
+      const post = await Post.findSingleById(this.requestedPostId, this.userid);
       // deert post var await bolson tul doorh ni "reliable can access to post var"
       // if "findSingleById" promise ni REJECT hiivel automataar door bga catch ajillana.
       // herhen reject hiihiig already in findSingleById-d zaasan bga
       if (post.isVisitorOwner) {
         // actually update db
-        let status = await this.actuallyUpdate(); // mongoDb-d actually update hiisnii daraa main promise resolve() hiih yostoi
+        const status = await this.actuallyUpdate(); // mongoDb-d actually update hiisnii daraa main promise resolve() hiih yostoi
         resolve(status); // yndsen promise iin resolve()
       } else {
         reject(); // doorhtoi ajil bololtoi
@@ -105,9 +106,9 @@ Post.prototype.actuallyUpdate = function () {
         { _id: new ObjectId(this.requestedPostId) },
         { $set: { title: this.data.title, body: this.data.body } }
       );
-      resolve("success");
+      resolve('success');
     } else {
-      resolve("failure");
+      resolve('failure');
       // neg udaa 2 uur resolve() return hiij boldogiig anhaar
     }
   });
@@ -118,13 +119,13 @@ Post.prototype.actuallyUpdate = function () {
 // 2. post author clear hiihed nuguuduul ni yaj auto oilgoltsood bgan bol???????
 Post.reusablePostQuery = function (uniqueOperations, visitorId) {
   return new Promise(async function (resolve, reject) {
-    let aggOperations = uniqueOperations.concat([
+    const aggOperations = uniqueOperations.concat([
       {
         $lookup: {
-          from: "users",
-          localField: "author",
-          foreignField: "_id",
-          as: "authorDocument",
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDocument',
         },
       },
       {
@@ -132,8 +133,8 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
           title: 1,
           body: 1,
           createdDate: 1,
-          authorId: "$author", // In mongoDb $ means that it's original field value
-          author: { $arrayElemAt: ["$authorDocument", 0] },
+          authorId: '$author', // In mongoDb $ means that it's original field value
+          author: { $arrayElemAt: ['$authorDocument', 0] },
         },
       },
     ]);
@@ -147,7 +148,7 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
       // return boolean
       // search iin ur dund authorId reveal hiigeed bn. yyniig nuuhiin tuld daraah arga
       post.authorId = undefined;
-      // delete post.authorId // gej boloh ch ene ni DB-d achaalal ugdug 
+      // delete post.authorId // gej boloh ch ene ni DB-d achaalal ugdug
 
       post.author = {
         username: post.author.username,
@@ -164,12 +165,12 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 // Sonirholtoi shiidel
 Post.findSingleById = function (id, visitorId) {
   return new Promise(async function (resolve, reject) {
-    if (typeof id != "string" || !ObjectId.isValid(id)) {
+    if (typeof id !== 'string' || !ObjectId.isValid(id)) {
       reject();
       return;
     }
 
-    let posts = await Post.reusablePostQuery(
+    const posts = await Post.reusablePostQuery(
       [{ $match: { _id: new ObjectId(id) } }],
       visitorId
     );
@@ -197,7 +198,7 @@ Post.findByAuthorId = function (authorId) {
 Post.delete = function (postIdToDelete, currentUserId) {
   return new Promise(async (resolve, reject) => {
     try {
-      let post = await Post.findSingleById(postIdToDelete, currentUserId);
+      const post = await Post.findSingleById(postIdToDelete, currentUserId);
       if (post.isVisitorOwner) {
         await postsCollection.deleteOne({ _id: new ObjectId(postIdToDelete) });
         resolve();
@@ -215,12 +216,12 @@ Post.delete = function (postIdToDelete, currentUserId) {
 Post.search = function (searchTerm) {
   return new Promise(async (resolve, reject) => {
     // 1. Incoming searchTerm iig check hiine (not object, not empty object etc.)
-    if (typeof searchTerm == "string") {
-      let posts = await Post.reusablePostQuery([
+    if (typeof searchTerm === 'string') {
+      const posts = await Post.reusablePostQuery([
         { $match: { $text: { $search: searchTerm } } },
         // ?????????? $search, $text haanaas garaad irev
         // MongoDb -iin funciton ium shig bn
-        { $sort: { score: { $meta: "textScore" } } },
+        { $sort: { score: { $meta: 'textScore' } } },
         // score mean "best match on the top"
         // ???????????? "textScore" haanaas garaad irev
         // mongoDB using INDEXES gej bn
@@ -230,6 +231,32 @@ Post.search = function (searchTerm) {
       reject();
     }
   });
+};
+
+Post.countPostByAuthor = function (id) {
+  return new Promise(async (resolve, reject) => {
+    const postCount = await postsCollection.countDocuments({ author: id });
+    resolve(postCount);
+  });
+};
+
+Post.getFeed = async function (id) {
+  // deerh id ni engiin string, not mongodb database object
+  // create an array of the user ids that the current user follows
+  let followedUsers = await followsCollection
+    .find({ authorId: new ObjectId(id) })
+    .toArray();
+  // ObjectId ni return promise
+  followedUsers = followedUsers.map(function (followDoc) {
+    return followDoc.followedId;
+  });
+
+  // look for posts where the author is in the above array of followed users
+  return Post.reusablePostQuery([
+    { $match: { author: { $in: followedUsers } } },
+    { $sort: { createdDate: -1 } },
+  ]);
+  // reUsablePostQuery ni avatar, username zergiig return hiideg
 };
 
 module.exports = Post;

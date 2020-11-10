@@ -1,19 +1,69 @@
-const User = require("../models/User");
-const Post = require("../models/Post");
+const User = require('../models/User');
+const Post = require('../models/Post');
+const Follow = require('../models/Follow');
+
+exports.sharedProfileData = async function (req, res, next) {
+  let isVisitorsProfile = false;
+  // next-d final function to run orno
+  // 1. current user is already followed or not esehiig shalgay
+  let isFollowing = false;
+  if (req.session.user) {
+    isVisitorsProfile = req.profileUser._id.equals(req.session.user._id);
+    // "_id"-g mongodb-iin ID object gej nerleed bn
+    // if current visitor is logged in bval gesen ug
+    // Follow model oruulahiin tuld deere require hiih yostoi
+    isFollowing = await Follow.isVisitorFollowing(
+      req.profileUser._id,
+      req.visitorId
+    );
+    // current profile user id / current visitor's id
+    // req object-d already assigned profileUser object
+    // herev followed bolson bval isVisitorFollowing in "true" return
+
+    req.isVisitorsProfile = isVisitorsProfile;
+    req.isFollowing = isFollowing;
+    // deerh true, or false value nuud ni next() function-d ashiglagdahaar shiljij bn gej bn
+    // storing isFollowing value to request object. daraa ni haanaas ch handaj bolno
+
+    // retreive post, follower, and following counts
+    const postCountPromise = Post.countPostByAuthor(req.profileUser._id);
+    // session eer damjval "id" ni engiin string bolj bn, harin busdaar bol mongodb object
+    const followerCountPromise = Follow.countFollowersById(req.profileUser._id);
+    const followingCountPromise = Follow.countFollowingById(
+      req.profileUser._id
+    );
+    // deerh 3 iin await iig delete hiisen, uchir ni edgeer ni bie bieniihee utgaas hamaaralgui
+    const [postCount, followerCount, followingCount] = await Promise.all([
+      postCountPromise,
+      followerCountPromise,
+      followingCountPromise,
+    ]);
+    // ARRAY DISTRUCTURING arga ashiglalaa
+    // Daraa ni deerh 3-aa request object-d hadgalah yostoi.
+
+    req.postCount = postCount;
+    req.followerCount = followerCount;
+    req.followingCount = followingCount;
+
+    next();
+    // go to next function in the route. what is the next function?
+    // answer. route.js deer yag yynii daraa bga function. see route.js
+  }
+};
 
 exports.mustBeLoggedIn = function (req, res, next) {
   if (req.session.user) {
     next();
   } else {
-    req.flash("errors", "You must be logged in to perform that action.");
+    req.flash('errors', 'You must be logged in to perform that action.');
     req.session.save(function () {
-      res.redirect("/");
+      res.redirect('/');
     });
   }
 };
 
 exports.login = function (req, res) {
-  let user = new User(req.body);
+  const user = new User(req.body);
   user
     .login()
     .then(function (result) {
@@ -25,17 +75,17 @@ exports.login = function (req, res) {
       // deerh ni "postController"-iin user iig tanihad ashiglagdana. Session-d "_id" hadgalagdana.
       // doorh ni disable intermediate screen
       req.session.save(function () {
-        res.redirect("/");
+        res.redirect('/');
       });
     })
     .catch(function (e) {
       // res.send(e)
-      req.flash("errors", e);
+      req.flash('errors', e);
       // flash package ni add/remove data from session, modify session data
       // deerh ni tsaana iim ium bolj bn
       // req.session.flash.errors = [e]
       req.session.save(function () {
-        res.redirect("/");
+        res.redirect('/');
       });
       //   redirect iig naidvartai hiihiin tul save dotor function oruulj bn
     });
@@ -44,12 +94,12 @@ exports.login = function (req, res) {
 
 exports.logout = function (req, res) {
   req.session.destroy(function () {
-    res.redirect("/");
+    res.redirect('/');
   });
 };
 
 exports.register = function (req, res) {
-  let user = new User(req.body);
+  const user = new User(req.body);
   user
     .register() // Promise tul then, catch() method ashiglaj bolno
     .then(() => {
@@ -59,26 +109,28 @@ exports.register = function (req, res) {
         _id: user.data._id,
       };
       req.session.save(function () {
-        res.redirect("/");
+        res.redirect('/');
       });
     })
     .catch((regErrors) => {
       regErrors.forEach(function (error) {
-        req.flash("regErrors", error);
+        req.flash('regErrors', error);
       });
       req.session.save(function () {
-        res.redirect("/");
+        res.redirect('/');
       });
     });
 };
 
-exports.home = function (req, res) {
+exports.home = async function (req, res) {
   if (req.session.user) {
-    // res.send("Welcome to the actual application!!!")
-    res.render("home-dashboard");
+    // fetch feed of posts for current user
+    const posts = await Post.getFeed(req.session.user._id);
+    res.render('home-dashboard', { posts });
+    // { posts: posts } gedgiig tovchilchloo
   } else {
-    res.render("home-guest", {
-      regErrors: req.flash("regErrors"),
+    res.render('home-guest', {
+      regErrors: req.flash('regErrors'),
     });
     // render-t var oruulj bga ni view-d var iig passlah arga ium
     // login hiij chadaagui humuust zuvhun 1 udaa haragdaad daraa ni delete
@@ -96,7 +148,7 @@ exports.ifUserExists = function (req, res, next) {
       next();
     })
     .catch(function () {
-      res.render("404");
+      res.render('404');
     });
 };
 
@@ -105,13 +157,63 @@ exports.profilePostsScreen = function (req, res) {
   Post.findByAuthorId(req.profileUser._id)
     .then(function (posts) {
       // posts ni Promise iin resolve-oos butsaasan utguud
-      res.render("profile", {
-        posts: posts,
+      res.render('profile', {
+        currentPage: 'posts',
+        posts,
         profileUsername: req.profileUser.username,
         profileAvatar: req.profileUser.avatar,
+        isFollowing: req.isFollowing,
+        isVisitorsProfile: req.isVisitorsProfile,
+        counts: {
+          postCount: req.postCount,
+          followerCount: req.followerCount,
+          followingCount: req.followingCount,
+        },
       });
     })
     .catch(function () {
-      res.render("404");
+      res.render('404');
     });
+};
+
+exports.profileFollowersScreen = async function (req, res) {
+  try {
+    const followers = await Follow.getFollowersById(req.profileUser._id);
+    res.render('profile-followers', {
+      currentPage: 'followers',
+      followers, // ene ni Follow-oos irsen resolve data, followers: followers
+      profileUsername: req.profileUser.username,
+      profileAvatar: req.profileUser.avatar,
+      isFollowing: req.isFollowing,
+      isVisitorsProfile: req.isVisitorsProfile,
+      counts: {
+        postCount: req.postCount,
+        followerCount: req.followerCount,
+        followingCount: req.followingCount,
+      },
+    });
+  } catch (e) {
+    res.render('404');
+  }
+};
+
+exports.profileFollowingScreen = async function (req, res) {
+  try {
+    const following = await Follow.getFollowingById(req.profileUser._id);
+    res.render('profile-following', {
+      currentPage: 'following',
+      following, // ene ni Follow-oos irsen resolve data
+      profileUsername: req.profileUser.username,
+      profileAvatar: req.profileUser.avatar,
+      isFollowing: req.isFollowing,
+      isVisitorsProfile: req.isVisitorsProfile,
+      counts: {
+        postCount: req.postCount,
+        followerCount: req.followerCount,
+        followingCount: req.followingCount,
+      },
+    });
+  } catch (e) {
+    res.render('404');
+  }
 };

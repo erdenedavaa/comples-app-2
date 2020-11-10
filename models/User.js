@@ -1,14 +1,14 @@
-const bcrypt = require("bcryptjs");
-const usersCollection = require("../db").db().collection("users");
+const bcrypt = require('bcryptjs');
+const usersCollection = require('../db').db().collection('users');
 // db.js deer "module.export=client"-iin db()-g clear hiisen tul deer code-nd ".db()" nemj ugj bn
-const validator = require("validator");
-const md5 = require("md5");
+const validator = require('validator');
+const md5 = require('md5');
 
 // User constructor function
-let User = function (data, getAvatar) {
+const User = function (data, getAvatar) {
   this.data = data;
   this.errors = [];
-  if (getAvatar == undefined) {
+  if (getAvatar === undefined) {
     getAvatar = false;
   }
   if (getAvatar) {
@@ -17,14 +17,14 @@ let User = function (data, getAvatar) {
 };
 
 User.prototype.cleanUp = function () {
-  if (typeof this.data.username != "string") {
-    this.data.username = "";
+  if (typeof this.data.username !== 'string') {
+    this.data.username = '';
   }
-  if (typeof this.data.email != "string") {
-    this.data.email = "";
+  if (typeof this.data.email !== 'string') {
+    this.data.email = '';
   }
-  if (typeof this.data.password != "string") {
-    this.data.password = "";
+  if (typeof this.data.password !== 'string') {
+    this.data.password = '';
   }
 
   // get rid of any bogus properties
@@ -37,34 +37,34 @@ User.prototype.cleanUp = function () {
 
 User.prototype.validate = function () {
   return new Promise(async (resolve, reject) => {
-    if (this.data.username == "") {
-      this.errors.push("You must provide a username.");
+    if (this.data.username == '') {
+      this.errors.push('You must provide a username.');
     }
     if (
-      this.data.username != "" &&
+      this.data.username != '' &&
       !validator.isAlphanumeric(this.data.username)
     ) {
-      this.errors.push("Username can only contain letters and numbers.");
+      this.errors.push('Username can only contain letters and numbers.');
     }
 
     if (!validator.isEmail(this.data.email)) {
-      this.errors.push("You must provide a valid email address.");
+      this.errors.push('You must provide a valid email address.');
     }
-    if (this.data.password == "") {
-      this.errors.push("You must provide a password.");
+    if (this.data.password == '') {
+      this.errors.push('You must provide a password.');
     }
     if (this.data.password.length > 0 && this.data.password.length < 6) {
-      this.errors.push("Password must be at least 6 characters.");
+      this.errors.push('Password must be at least 6 characters.');
     }
     if (this.data.password.length > 50) {
-      this.errors.push("Password cannot exceed 50 characters.");
+      this.errors.push('Password cannot exceed 50 characters.');
     }
 
     if (this.data.username.length > 0 && this.data.username.length < 3) {
-      this.errors.push("Username must be at least 3 characters.");
+      this.errors.push('Username must be at least 3 characters.');
     }
     if (this.data.username.length > 30) {
-      this.errors.push("Username cannot exceed 30 characters.");
+      this.errors.push('Username cannot exceed 30 characters.');
     }
 
     // Only if username is valid then check to see if it's already taken
@@ -73,24 +73,24 @@ User.prototype.validate = function () {
       this.data.username.length < 31 &&
       validator.isAlphanumeric(this.data.username)
     ) {
-      let usernameExists = await usersCollection.findOne({
+      const usernameExists = await usersCollection.findOne({
         username: this.data.username,
       });
       // how to coordinate above and below operations. Solution is async, await
       // findOne function returns promise, so we can use await before that function
       // Ingesneer JS freeze all other operations until this operation is completed
       if (usernameExists) {
-        this.errors.push("That username is already taken.");
+        this.errors.push('That username is already taken.');
       }
     }
 
     // Only if email is valid then check to see if it's already taken
     if (validator.isEmail(this.data.email)) {
-      let emailExists = await usersCollection.findOne({
+      const emailExists = await usersCollection.findOne({
         email: this.data.email,
       });
       if (emailExists) {
-        this.errors.push("That email is already been used.");
+        this.errors.push('That email is already been used.');
       }
     }
 
@@ -112,14 +112,14 @@ User.prototype.login = function () {
         ) {
           this.data = attemptedUser;
           this.getAvatar();
-          resolve("Congrats!");
+          resolve('Congrats!');
         } else {
-          reject("Invalid username / password.");
+          reject('Invalid username / password.');
           // catch(function(e)) -ruu shidegdene
         }
       })
       .catch(function () {
-        reject("Please try again later.");
+        reject('Please try again later.');
       });
   });
 };
@@ -137,7 +137,7 @@ User.prototype.register = function () {
     // then save the user data into a datbase
     if (!this.errors.length) {
       // hash user password
-      let salt = bcrypt.genSaltSync(10);
+      const salt = bcrypt.genSaltSync(10);
       this.data.password = bcrypt.hashSync(this.data.password, salt);
       await usersCollection.insertOne(this.data);
       // avatar iig databse-d permanently save hiihguin tul daraa ni bairluulj bn
@@ -157,20 +157,20 @@ User.prototype.getAvatar = function () {
 
 User.findByUsername = function (username) {
   return new Promise(function (resolve, reject) {
-    if (typeof username != "string") {
+    if (typeof username !== 'string') {
       reject();
       return;
     }
     usersCollection
-      .findOne({ username: username })
+      .findOne({ username })
       .then(function (userDoc) {
         if (userDoc) {
-          userDoc = new User(userDoc, true)
+          userDoc = new User(userDoc, true);
           userDoc = {
             _id: userDoc.data._id,
             username: userDoc.data.username,
-            avatar: userDoc.avatar
-          }
+            avatar: userDoc.avatar,
+          };
           resolve(userDoc);
         } else {
           reject();
