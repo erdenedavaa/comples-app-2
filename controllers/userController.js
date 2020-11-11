@@ -158,6 +158,7 @@ exports.profilePostsScreen = function (req, res) {
     .then(function (posts) {
       // posts ni Promise iin resolve-oos butsaasan utguud
       res.render('profile', {
+        title: `Profile for ${req.profileUser.username}`,
         currentPage: 'posts',
         posts,
         profileUsername: req.profileUser.username,

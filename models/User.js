@@ -37,11 +37,11 @@ User.prototype.cleanUp = function () {
 
 User.prototype.validate = function () {
   return new Promise(async (resolve, reject) => {
-    if (this.data.username == '') {
+    if (this.data.username === '') {
       this.errors.push('You must provide a username.');
     }
     if (
-      this.data.username != '' &&
+      this.data.username !== '' &&
       !validator.isAlphanumeric(this.data.username)
     ) {
       this.errors.push('Username can only contain letters and numbers.');

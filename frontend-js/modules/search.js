@@ -1,27 +1,27 @@
-import axios from "axios";
-import DOMPurify from "dompurify";
+import axios from 'axios';
+import DOMPurify from 'dompurify';
 
 export default class Search {
   // 1. Select DOM elements, and keep track of any useful data
   // soon as the object is created, then constructor function auto run hiideg.
   constructor() {
     this.injectHTML();
-    this.headerSearchIcon = document.querySelector(".header-search-icon");
-    this.overlay = document.querySelector(".search-overlay");
-    this.closeIcon = document.querySelector(".close-live-search");
-    this.inputField = document.querySelector("#live-search-field");
-    this.resultsArea = document.querySelector(".live-search-results");
-    this.loaderIcon = document.querySelector(".circle-loader");
+    this.headerSearchIcon = document.querySelector('.header-search-icon');
+    this.overlay = document.querySelector('.search-overlay');
+    this.closeIcon = document.querySelector('.close-live-search');
+    this.inputField = document.querySelector('#live-search-field');
+    this.resultsArea = document.querySelector('.live-search-results');
+    this.loaderIcon = document.querySelector('.circle-loader');
     this.typingWaitTimer;
-    this.previousValue = "";
+    this.previousValue = '';
     this.events();
   }
 
   // 2. Events. Keep track of any events (mouse click, keystroke etc.)
   events() {
-    this.inputField.addEventListener("keyup", () => this.keyPressHandler());
-    this.closeIcon.addEventListener("click", () => this.closeOverlay());
-    this.headerSearchIcon.addEventListener("click", (e) => {
+    this.inputField.addEventListener('keyup', () => this.keyPressHandler());
+    this.closeIcon.addEventListener('click', () => this.closeOverlay());
+    this.headerSearchIcon.addEventListener('click', (e) => {
       e.preventDefault();
       this.openOverlay();
     });
@@ -31,13 +31,13 @@ export default class Search {
   keyPressHandler() {
     let value = this.inputField.value;
 
-    if (value == "") {
+    if (value == '') {
       clearTimeout(this.typingWaitTimer);
       this.hideLoaderIcon();
       this.hideResultsArea();
     }
 
-    if (value != "" && value != this.previousValue) {
+    if (value != '' && value != this.previousValue) {
       clearTimeout(this.typingWaitTimer);
       // haih zuilee bichij duussanii daraa tsag toolj ehelne gesen ug
       // keypress bolgoniii daraa timelear hiigdene
@@ -52,7 +52,7 @@ export default class Search {
 
   sendRequest() {
     axios
-      .post("/search", { searchTerm: this.inputField.value })
+      .post('/search', { searchTerm: this.inputField.value })
       .then((response) => {
         // postController.search-ees json(posts) irne
         console.log(response.data);
@@ -60,7 +60,7 @@ export default class Search {
         this.renderResultsHTML(response.data);
       })
       .catch(() => {
-        alert("Hello, the request failed.");
+        alert('Hello, the request failed.');
       });
   }
 
@@ -69,7 +69,7 @@ export default class Search {
       this.resultsArea.innerHTML = DOMPurify.sanitize(`
         <div class="list-group shadow-sm">
         <div class="list-group-item active"><strong>Search Results</strong>
-          (${posts.length > 1 ? `${posts.length} items found` : "1 item found"})
+          (${posts.length > 1 ? `${posts.length} items found` : '1 item found'})
         </div>
           
         ${posts
@@ -89,7 +89,7 @@ export default class Search {
             </a>
             `;
           })
-          .join("")}
+          .join('')}
           
         </div>
       `);
@@ -103,33 +103,33 @@ export default class Search {
   }
 
   showLoaderIcon() {
-    this.loaderIcon.classList.add("circle-loader--visible");
+    this.loaderIcon.classList.add('circle-loader--visible');
   }
 
   hideLoaderIcon() {
-    this.loaderIcon.classList.remove("circle-loader--visible");
+    this.loaderIcon.classList.remove('circle-loader--visible');
   }
 
   showResultsArea() {
-    this.resultsArea.classList.add("live-search-results--visible");
+    this.resultsArea.classList.add('live-search-results--visible');
   }
 
   hideResultsArea() {
-    this.resultsArea.classList.remove("live-search-results--visible");
+    this.resultsArea.classList.remove('live-search-results--visible');
   }
 
   openOverlay() {
-    this.overlay.classList.add("search-overlay--visible");
+    this.overlay.classList.add('search-overlay--visible');
     setTimeout(() => this.inputField.focus(), 50);
   }
 
   closeOverlay() {
-    this.overlay.classList.remove("search-overlay--visible");
+    this.overlay.classList.remove('search-overlay--visible');
   }
 
   injectHTML() {
     document.body.insertAdjacentHTML(
-      "beforeend",
+      'beforeend',
       `
         <div class="search-overlay">
           <div class="search-overlay-top shadow-sm">

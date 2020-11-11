@@ -65,8 +65,9 @@ app.use(function (req, res, next) {
   next();
 });
 
-const { runInNewContext } = require('vm');
+// const { runInNewContext } = require('vm');
 const router = require('./router');
+// const { Socket } = require('socket.io');
 
 app.use(express.urlencoded({ extended: false }));
 // user submitted data to request object gesen tohirgoo
@@ -79,4 +80,42 @@ app.set('view engine', 'ejs');
 
 app.use('/', router);
 
-module.exports = app;
+const server = require('http').createServer(app);
+
+const io = require('socket.io')(server);
+
+// express session package (don't need to memorise)
+io.use(function (socket, next) {
+  sessionOptions(socket.request, socket.request.res, next);
+  // ene ni express data-g socket.io dotor available bolgono gesen ug
+});
+
+io.on('connection', function (socket) {
+  // if only logged in
+  if (socket.request.session.user) {
+    // userController deer req.session.user-iig login() deer zaaj ugsun bga
+    const { user } = socket.request.session;
+    // "let user = socket.request.session.user" iin tovchlol ium
+
+    // session user iin medeelliig frontend JS ruu yawuulna
+    socket.emit('welcome', { username: user.username, avatar: user.avatar });
+
+    socket.on('chatMessageFromBrowser', function (data) {
+      // send message to all broadcasting users gevel "io.emit" hiine.
+      // harin anh bichsen hunruu ni butsaan yawuulahgui bol "socket.broadcast.emit"
+      // gesen ch server ni current logged in user-iin username, avatar iig medeh shaardlagatai
+      // yamar argaar medeh ve? deer bichsen socket.emit(...)
+      socket.broadcast.emit('chatMessageFromServer', {
+        message: sanitizeHTML(data.message, {
+          allowedTags: [],
+          allowedAttributes: {},
+        }),
+        username: user.username,
+        avatar: user.avatar,
+      });
+      // we want to send to all connected users
+    });
+  }
+});
+
+module.exports = server;
