@@ -3,6 +3,7 @@ import emailValidator from 'email-validator';
 
 export default class RegistrationForm {
   constructor() {
+    this._csrf = document.querySelector('[name="_csrf"]').value;
     this.form = document.querySelector('#registration-form');
     this.allFields = document.querySelectorAll(
       '#registration-form .form-control'
@@ -132,7 +133,7 @@ export default class RegistrationForm {
 
     if (!this.email.errors) {
       axios
-        .post('/doesEmailExist', { email: this.email.value })
+        .post('/doesEmailExist', { _csrf: this._csrf, email: this.email.value })
         .then((response) => {
           if (response.data) {
             // server true or false ilgeene, true bol already has that email address
@@ -196,7 +197,7 @@ export default class RegistrationForm {
 
     if (!this.username.errors) {
       axios
-        .post('/doesUsernameExist', { username: this.username.value })
+        .post('/doesUsernameExist', {_csrf: this._csrf, username: this.username.value })
         .then((response) => {
           if (response.data) {
             // if username already exists
