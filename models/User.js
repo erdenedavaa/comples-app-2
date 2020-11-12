@@ -182,4 +182,19 @@ User.findByUsername = function (username) {
   });
 };
 
+User.doesEmailExist = function (email) {
+  return new Promise(async function (resolve, reject) {
+    if (typeof email !== 'string') {
+      resolve(false);
+    }
+
+    const user = await usersCollection.findOne({ email });
+    if (user) {
+      resolve(true);
+    } else {
+      resolve(false);
+    }
+  });
+};
+
 module.exports = User;
