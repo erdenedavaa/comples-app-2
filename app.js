@@ -9,6 +9,14 @@ const csrf = require('csurf');
 const app = express();
 const sanitizeHTML = require('sanitize-html');
 
+app.use(express.urlencoded({ extended: false }));
+// user submitted data to request object gesen tohirgoo
+// request.body
+app.use(express.json());
+
+app.use('/api', require('./router-api'));
+// ingesneer all doorh app.use uud api-d neelttei bolno
+
 const sessionOptions = session({
   secret: 'Javasript is soooooooo cooooool',
   // default aar session ni memory-d save hiigddeg.
@@ -70,11 +78,6 @@ app.use(function (req, res, next) {
 // const { runInNewContext } = require('vm');
 const router = require('./router');
 // const { Socket } = require('socket.io');
-
-app.use(express.urlencoded({ extended: false }));
-// user submitted data to request object gesen tohirgoo
-// request.body
-app.use(express.json());
 
 app.use(express.static('public'));
 app.set('views', 'views');

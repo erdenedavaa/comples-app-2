@@ -1,6 +1,26 @@
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Post = require('../models/Post');
 const Follow = require('../models/Follow');
+
+exports.apiGetPostsByUsername = async function (req, res) {
+  try {
+    const authorDoc = await User.findByUsername(req.params.username);
+    const posts = await Post.findByAuthorId(authorDoc._id);
+    res.json(posts);
+  } catch (error) {
+    res.json('Sorry, invalid user requested.');
+  }
+};
+
+exports.apiMustBeLoggedIn = function (req, res, next) {
+  try {
+    req.apiUser = jwt.verify(req.body.token, process.env.JWTSECRET);
+    next();
+  } catch (error) {
+    res.json('Sorry, you must provide a valid token.');
+  }
+};
 
 exports.doesUsernameExist = function (req, res) {
   User.findByUsername(req.body.username)
@@ -104,6 +124,23 @@ exports.login = function (req, res) {
         res.redirect('/');
       });
       //   redirect iig naidvartai hiihiin tul save dotor function oruulj bn
+    });
+  // login method return Promise
+};
+
+exports.apiLogin = function (req, res) {
+  const user = new User(req.body);
+  user
+    .login()
+    .then(function () {
+      res.json(
+        jwt.sign({ _id: user.data._id }, process.env.JWTSECRET, {
+          expiresIn: '7d',
+        })
+      );
+    })
+    .catch(function () {
+      res.json('Sorry, your value is not correct.');
     });
   // login method return Promise
 };

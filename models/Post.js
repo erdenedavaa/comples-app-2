@@ -90,7 +90,7 @@ Post.prototype.update = function () {
       } else {
         reject(); // doorhtoi ajil bololtoi
       }
-    } catch  {
+    } catch {
       reject();
       // ene reject ni "findSingleById"-giin reject shuu
     }

@@ -27,6 +27,19 @@ exports.create = function (req, res) {
   // catch ni unsucessful REJECTS
 };
 
+exports.apiCreate = function (req, res) {
+  const post = new Post(req.body, req.apiUser._id);
+  // userController-iin apiUserMustBeLoggin deer "req.apiUser" onooson
+  post
+    .create()
+    .then(function () {
+      res.json('Congrats');
+    })
+    .catch(function (errors) {
+      res.json(errors);
+    });
+};
+
 exports.viewSingle = async function (req, res) {
   try {
     const post = await Post.findSingleById(req.params.id, req.visitorId);
@@ -99,6 +112,17 @@ exports.delete = function (req, res) {
     .catch(() => {
       req.flash('errors', 'You do not have permission to perform that action.');
       req.session.save(() => res.redirect('/'));
+    });
+};
+
+exports.apiDelete = function (req, res) {
+  Post.delete(req.params.id, req.apiUser._id)
+    // apiMustBeLoggedIn function make above "req.apiUser._id" available
+    .then(() => {
+      res.json('Success');
+    })
+    .catch(() => {
+      res.json('You do not have permission to perform that action.');
     });
 };
 
